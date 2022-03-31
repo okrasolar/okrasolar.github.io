@@ -1,0 +1,143 @@
+@startuml inline_umlgraph_1.png
+top to bottom direction
+[*] --> notConnected
+notConnected --> notConnected
+notConnected --> connecting : connection request via API
+connecting --> sendCwjap
+connecting : ""ATE0""
+sendCwjap --> sendCiprecvmode
+sendCwjap --> finalizeDisconnect : connection close via API
+sendCwjap : ""AT+CWJAP="<ssid>","<password>"""
+sendCiprecvmode --> sendCipmode
+sendCiprecvmode : ""AT+CIPRECVMODE=1""
+sendCipmode --> sendCipstart
+sendCipmode : ""AT+CIPMODE=0""
+sendCipstart --> finalizeConnect
+sendCipstart : ""AT+CIPSTART="UDP",<host>,<port>""
+sendCipstart : ""AT+CIPSTART="TCP",<host>,<port>""
+finalizeConnect --> connected
+connected --> sendDataState : bytes in write buffer
+connected --> sendCiprecvdata : incoming data pending & TCP
+connected --> receiving : incoming data pending & UDP
+connected --> sendCipclose : connection closed via API
+connected --> sendCwqap : connection closed by peer
+connected --> connected
+connected : bytes in write buffer: ""AT+CIPSEND=<numOfBytes>""
+sendDataState --> connected
+sendDataState : send data
+sendCiprecvdata --> sendCipclose : connection closed via API
+sendCiprecvdata --> waitReceive : bytesToReceive > 0
+sendCiprecvdata --> connected : no bytes to receive
+sendCiprecvdata : bytesToReceive > 0: ""AT+CIPRECVDATA=<numBytesReceive>""
+waitReceive --> waitReceive : no data
+waitReceive --> receiving : data available
+receiving --> receiving : bytesToRead > 0
+receiving --> sendCiprecvdata : bytesToReceive > 0
+receiving --> connected : no bytes to receive/read
+sendCipclose --> sendCwqap
+sendCipclose : ""AT+CIPCLOSE""
+sendCwqap --> finalizeDisconnect
+sendCwqap : ""AT+CWQAP""
+finalizeDisconnect --> notConnected
+@enduml
+@startuml inline_umlgraph_2.png
+top to bottom direction
+[*] --> notConnected
+notConnected --> notConnected
+notConnected --> connecting : connection request via API
+connecting --> sendCgsockcont
+connecting : ""ATE0""
+sendCgsockcont --> sendCsocksetpn
+sendCgsockcont : ""AT+CGSOCKCONT=1,"IP",<apn>""
+sendCsocksetpn --> sendCipmode
+sendCsocksetpn : ""AT+CSOCKSETPN=1""
+sendCipmode --> sendNetopen
+sendCipmode : ""AT+CIPMODE=0""
+sendNetopen --> sendCiprxget
+sendNetopen : ""AT+NETOPEN""
+sendCiprxget --> sendDnsQuery
+sendCiprxget : ""AT+CIPRXGET=1""
+sendDnsQuery --> sendDnsQuery
+sendDnsQuery --> sendCipopen : can send DNS query
+sendDnsQuery : ""AT+CDNSGIP="<hostname>" ""
+sendCipopen --> finalizeConnect
+sendCipopen : ""AT+CIPOPEN=0,"UDP",,,""
+sendCipopen : ""AT+CIPOPEN=0,"TCP",<ip>,""
+finalizeConnect --> connected
+connected --> sendData : bytes in write buffer
+connected --> sendCiprxget4 : incoming data pending
+connected --> sendNetclose : connection closed via API
+connected --> connected
+connected : bytes in write buffer: ""AT+CIPSEND=0,<numOfBytes>""
+sendData --> connected
+sendData : send data
+sendCiprxget4 --> sendCiprxget2
+sendCiprxget4 : ""AT+CIPRXGET=4,0""
+sendCiprxget2 --> sendNetclose : connection closed via API
+sendCiprxget2 --> waitReceive : bytesToReceive > 0
+sendCiprxget2 --> connected
+sendCiprxget2 --> ipUnconnected : connection close by peer
+sendCiprxget2 : ""AT+CIPRXGET=2,0,<numBytesReceive>""
+waitReceive --> waitReceive : no data
+waitReceive --> receiving : data available
+receiving --> receiving : bytesToRead > 0
+receiving --> sendCiprxget2 : bytesToReceive > 0
+receiving --> sendCiprxget4 : no bytes to receive/read
+ipUnconnected --> sendNetclose : connection closed via API
+ipUnconnected --> sendCipopen : connection close by peer
+sendNetclose --> finalizeDisconnect
+sendNetclose : ""AT+NETCLOSE=0""
+finalizeDisconnect --> notConnected
+@enduml
+@startuml inline_umlgraph_3.png
+top to bottom direction
+[*] --> notConnected
+notConnected --> notConnected
+notConnected --> connecting : connection request via API
+connecting --> sendCiprxget
+connecting : ""ATE0""
+sendCiprxget --> sendCipmux
+sendCiprxget : ""AT+CIPRXGET=1""
+sendCipmux --> sendCstt
+sendCipmux : ""AT+CIPMUX=1""
+sendCstt --> sendCiicr
+sendCstt : ""AT+CSTT=<apn>""
+sendCiicr --> sendCifsr
+sendCiicr : AT+CIICR
+sendCifsr --> sendCipshut : connection closed via API
+sendCifsr --> sendDnsQuery
+sendCifsr : AT+CIFSR
+sendDnsQuery --> sendDnsQuery
+sendDnsQuery --> sendCipstart : can send DNS query
+sendDnsQuery : ""AT+CDNSGIP="<hostname>" ""
+sendCipstart --> finalizeConnect
+sendCipstart : ""AT+CIPSTART=0,"UDP",<ip>""
+sendCipstart : ""AT+CIPSTART=0,"TCP",<ip>""
+finalizeConnect --> connected
+connected --> sendData : bytes in write buffer
+connected --> sendCiprxget4 : incoming data pending
+connected --> sendCipclose : connection closed via API
+connected --> connected
+connected : bytes in write buffer: ""AT+CIPSEND=0,<numOfBytes>""
+sendData --> connected
+sendData : send data
+sendCiprxget4 --> sendCiprxget2
+sendCiprxget4 : ""AT+CIPRXGET=4,0""
+sendCiprxget2 --> sendCipclose : connection closed via API
+sendCiprxget2 --> waitReceive : bytesToReceive > 0
+sendCiprxget2 --> connected
+sendCiprxget2 --> ipUnconnected : connection close by peer
+sendCiprxget2 : ""AT+CIPRXGET=2,0,<numBytesReceive>""
+waitReceive --> waitReceive : no data
+waitReceive --> receiving : data available
+receiving --> receiving : bytesToRead > 0
+receiving --> sendCiprxget2 : bytesToReceive > 0
+receiving --> sendCiprxget4 : no bytes to receive/read
+ipUnconnected --> finalizeDisconnect : connection closed via API
+ipUnconnected --> sendCipstart : connection close by peer
+sendCipclose --> sendCipshut
+sendCipclose : ""AT+CIPCLOSE=0""
+sendCipshut --> finalizeDisconnect
+sendCipshut : ""AT+CIPSHUT""
+finalizeDisconnect --> notConnected
+@enduml
